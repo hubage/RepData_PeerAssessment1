@@ -1,20 +1,71 @@
 # Reproducible Research: Peer Assessment 1
+#assume working directory contains .zip file
 
+##load libraries
+```{r echo = TRUE}
+library(plyr)
+library(lattice)
+```
 
 ## Loading and preprocessing the data
-
+```{r echo = TRUE}
+unzip("activity.zip") 
+data <- read.csv("activity.csv")
+dataclean <- data[which(data$steps!= "NA"), ]
+```
 
 
 ## What is mean total number of steps taken per day?
+```{r echo = TRUE}
+daily_steps <- ddply(dataclean, .(date), summarise, steps=sum(steps))
+hist(daily_steps$steps, xlab="Steps Per Day")
+```
 
+## Mean and Median 
+```{r echo = TRUE}
+mean(daily_steps$steps)
+median(daily_steps$steps)
+```
 
 
 ## What is the average daily activity pattern?
+```{r echo = TRUE}
+average_date <- ddply(dataclean, .(interval), summarise, steps=mean(steps))
+plot(average_date$interval, average_date$steps, type="l", xlab="5-minute interval", 
+ylab="Average steps",main="Average daily activity")
+```
 
+## Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r echo = TRUE}
+average_date[average_date$steps==max(average_date$steps),]
+colnames(average_date)[2] <- "intervalAvg"
+```
 
+## Inputing missing values
+```{r echo = TRUE}
+#  calculate the missing values
+sum(is.na(data$steps))
+# Replace NA's with the average of the 5 minute inverval
+merged <- arrange(join(data, average_date), interval)
+merged$steps[is.na(merged$steps)] <- merged$intervalAvg[is.na(merged$steps)]
+# plot the histogram
+#Difference in New Total Steps Per day is very simliar to original
+new_daily_steps <- ddply(merged, .(date), summarise, steps=sum(steps))
+hist(new_daily_steps$steps, main="Number of Steps", 
+     xlab="steps taken per day",,)
 
-## Imputing missing values
-
-
+# Mean and Median After Replacing NA's are very simliar to original
+mean(new_daily_steps$steps)
+median(new_daily_steps$steps)
+daily_steps_1 <- sum(dataclean$steps)
+daily_steps_2 <- sum(merged$steps)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r echo=TRUE}
+weekdays <- weekdays(as.Date(merged$date))
+data_weekdays <- transform(merged, day=weekdays)
+data_weekdays$wk <- ifelse(data_weekdays$day %in% c("Saturday", "Sunday"),"weekend", "weekday")
+average_week <- ddply(data_weekdays, .(interval, wk), summarise, steps=mean(steps))
+xyplot(steps ~ interval | wk, data = average_week, layout = c(1, 2), type="l")
+```
