@@ -1,5 +1,6 @@
 # Reproducible Research: Peer Assessment 1
 #assume working directory contains .zip file
+#Aug Class
 
 ##load libraries
 ```{r echo = TRUE}
